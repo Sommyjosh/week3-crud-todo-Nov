@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require('express');
 const logger = require('./middleware/logger');
 const {
@@ -26,6 +27,8 @@ app.post('/todos', createTodoValidator, (req, res) => {
   const newTodo = { id: todos.length + 1, ...req.body }; // Auto-ID
   todos.push(newTodo);
   res.status(201).json(newTodo); // Echo back
+  const task = newTodo['task'];
+  if (!task || typeof task !== 'string' || task.trim('')=== '') return res.status(400).json({message : "task not found" });
 });
 
 // PATCH Update – Partial
@@ -50,6 +53,20 @@ app.delete('/todos/:id', (req, res) => {
   }
 });
 
+// GET by ID – single read
+app.get('/todos/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  const todo = todos.find((t) => t.id === id);
+  if (!todo) res.status(404).json({ error: 'Todo not found' });
+  res.json(todo);
+});
+
+//filter incomplete tasks
+app.get('/todos/active' , (req , res) =>{
+  const incompleted = todos.filter((t) => !t.completed);
+  res.json(incompleted);
+})
+
 app.get('/todos/completed', (req, res) => {
   const completed = todos.filter((t) => t.completed);
   res.json(completed); // Custom Read!
@@ -57,5 +74,5 @@ app.get('/todos/completed', (req, res) => {
 
 app.use(errorHandler); // Error-handling middleware
 
-const PORT = 3002;
+const PORT = process.env.port;
 app.listen(PORT, "0.0.0.0", () => console.log(`Server on port ${PORT}`));
